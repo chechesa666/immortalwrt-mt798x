@@ -98,11 +98,11 @@ return baseclass.extend({
         ]);
       }
 
-      callSwconfigPortState('switch0').then((ports) => {
-        topologies.switch0.portstate = ports;
-      });
       return Promise.all([
-        topologies,
+        L.resolveDefault(callSwconfigPortState('switch0'), []).then((ports) => {
+          topologies.switch0.portstate = ports;
+          return topologies;
+        }),
         L.resolveDefault(callLuciBoardJSON(), {}),
         L.resolveDefault(callLuciNetworkDevices(), {})
       ]);
@@ -120,7 +120,9 @@ return baseclass.extend({
     const switch0 = topologies.switch0;
     for (const port of switch0.ports) {
       const label = port.label.toUpperCase();
-      const { link, duplex, speed } = switch0.portstate[port.num];
+      const portstate = switch0.portstate[port.num];
+      if (!portstate) continue;
+      const { link, duplex, speed } = portstate;
       const txrx = { tx_bytes: 0, rx_bytes: 0 };
 
       if (label.startsWith('WAN')) {
